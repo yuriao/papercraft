@@ -1,17 +1,65 @@
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
 dist/
-.env
+build/
+*.egg-info/
 __pycache__/
 *.pyc
 *.pyo
-.DS_Store
-*.db
-*.sqlite3
+*.pyd
+.Python
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Data & uploads
 backend/data/
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Python virtual environments
 venv/
 .venv/
-chromedriver
-*.tif
-*.pdf
+env/
+
+# Test coverage
+coverage/
+.nyc_output/
+htmlcov/
+.coverage
+
+# Logs
 *.log
-.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# LaTeX temp files
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
+# Docker
+.dockerignore
