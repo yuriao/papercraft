@@ -22,7 +22,7 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: |
-          npm ci
+          npm install
           VITE_API_URL=/api npm run build
 
       - name: Deploy to server via SSH
