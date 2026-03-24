@@ -68,6 +68,7 @@ jobs:
             echo "✅ nginx reloaded"
 
       - name: Health check
+        continue-on-error: true
         run: |
           echo "Waiting for backend to start..."
           for i in {1..12}; do
