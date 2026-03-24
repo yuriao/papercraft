@@ -37,8 +37,9 @@ jobs:
             set -e
             cd /opt/papercraft
 
-            # Pull latest code
-            git pull origin main
+            # Pull latest code (force reset any local modifications)
+            git fetch origin main
+            git reset --hard origin/main
 
             # Backend: rebuild Docker image and restart
             docker compose -f docker-compose.prod.yml build backend
