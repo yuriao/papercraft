@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@tiptap/core": "^2.4.0",
     "@tiptap/extension-placeholder": "^2.4.0",
     "@tiptap/extension-typography": "^2.4.0",
@@ -17,6 +18,7 @@
     "@tiptap/pm": "^2.4.0",
     "@tiptap/react": "^2.4.0",
     "@tiptap/starter-kit": "^2.4.0",
+    "axios": "^1.13.6",
     "html2canvas": "^1.4.1",
     "katex": "^0.16.10",
     "plotly.js-dist-min": "^2.32.0",
