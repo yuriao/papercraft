@@ -1,92 +1,65 @@
-import uuid
-from datetime import datetime
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime, timezone
+import uuid
+from database import get_db
+from models.models import PaperModel
 
-from backend.database import get_db
-from backend.models.models import Paper
+router = APIRouter(prefix='/papers', tags=['papers'])
 
-router = APIRouter(prefix="/papers", tags=["papers"])
-
-
-class CreatePaperRequest(BaseModel):
-    title: str = ""
-    authors: list[str] = []
-    abstract: str = ""
+class PaperCreate(BaseModel):
+    title: str = 'Untitled Paper'
+    authors: list = []
+    abstract: str = ''
     content: dict = {}
+    figures: list = []
 
-
-class UpdatePaperRequest(BaseModel):
+class PaperPatch(BaseModel):
     title: Optional[str] = None
-    authors: Optional[list[str]] = None
+    authors: Optional[list] = None
     abstract: Optional[str] = None
     content: Optional[dict] = None
+    figures: Optional[list] = None
 
+def to_dict(p):
+    return {
+        'id': p.id, 'title': p.title, 'authors': p.authors or [],
+        'abstract': p.abstract or '', 'content': p.content or {}, 'figures': p.figures or [],
+        'createdAt': p.created_at.isoformat() if p.created_at else '',
+        'updatedAt': p.updated_at.isoformat() if p.updated_at else ''
+    }
 
-@router.get("")
-async def list_papers(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Paper).order_by(Paper.created_at.desc()))
-    papers = result.scalars().all()
-    return [p.to_dict() for p in papers]
+@router.get('/')
+def list_papers(db: Session = Depends(get_db)):
+    return [to_dict(p) for p in db.query(PaperModel).all()]
 
+@router.post('/', status_code=201)
+def create_paper(body: PaperCreate, db: Session = Depends(get_db)):
+    paper = PaperModel(id=str(uuid.uuid4()), title=body.title, authors=body.authors,
+                       abstract=body.abstract, content=body.content, figures=body.figures)
+    db.add(paper); db.commit(); db.refresh(paper)
+    return to_dict(paper)
 
-@router.post("")
-async def create_paper(body: CreatePaperRequest, db: AsyncSession = Depends(get_db)):
-    paper = Paper(
-        id=str(uuid.uuid4()),
-        title=body.title,
-        abstract=body.abstract,
-    )
-    paper.authors = body.authors
-    paper.content = body.content or {"type": "doc", "content": []}
-    db.add(paper)
-    await db.commit()
-    await db.refresh(paper)
-    return paper.to_dict()
+@router.get('/{paper_id}')
+def get_paper(paper_id: str, db: Session = Depends(get_db)):
+    paper = db.get(PaperModel, paper_id)
+    if not paper: raise HTTPException(status_code=404, detail='Not found')
+    return to_dict(paper)
 
+@router.patch('/{paper_id}')
+def update_paper(paper_id: str, body: PaperPatch, db: Session = Depends(get_db)):
+    paper = db.get(PaperModel, paper_id)
+    if not paper: raise HTTPException(status_code=404, detail='Not found')
+    for k, v in body.model_dump(exclude_none=True).items():
+        setattr(paper, k, v)
+    paper.updated_at = datetime.now(timezone.utc)
+    db.commit(); db.refresh(paper)
+    return to_dict(paper)
 
-@router.get("/{paper_id}")
-async def get_paper(paper_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Paper).where(Paper.id == paper_id))
-    paper = result.scalar_one_or_none()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    return paper.to_dict()
-
-
-@router.patch("/{paper_id}")
-async def update_paper(
-    paper_id: str, body: UpdatePaperRequest, db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(select(Paper).where(Paper.id == paper_id))
-    paper = result.scalar_one_or_none()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-
-    if body.title is not None:
-        paper.title = body.title
-    if body.authors is not None:
-        paper.authors = body.authors
-    if body.abstract is not None:
-        paper.abstract = body.abstract
-    if body.content is not None:
-        paper.content = body.content
-    paper.updated_at = datetime.utcnow()
-
-    await db.commit()
-    await db.refresh(paper)
-    return paper.to_dict()
-
-
-@router.delete("/{paper_id}")
-async def delete_paper(paper_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Paper).where(Paper.id == paper_id))
-    paper = result.scalar_one_or_none()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Paper not found")
-    await db.delete(paper)
-    await db.commit()
-    return {"ok": True}
+@router.delete('/{paper_id}', status_code=204)
+def delete_paper(paper_id: str, db: Session = Depends(get_db)):
+    paper = db.get(PaperModel, paper_id)
+    if not paper: raise HTTPException(status_code=404, detail='Not found')
+    db.delete(paper); db.commit()

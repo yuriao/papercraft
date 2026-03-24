@@ -13,7 +13,7 @@ from PIL import Image
 import plotly.graph_objects as go
 import plotly.io as pio
 
-from backend.services.latex_compiler import doc_to_latex
+from services.latex_compiler import doc_to_latex
 
 
 DATA_DIR = os.getenv("DATA_DIR", "./data")

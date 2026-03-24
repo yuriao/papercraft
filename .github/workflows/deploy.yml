@@ -41,8 +41,8 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            # Backend: rebuild Docker image and restart
-            docker compose -f docker-compose.prod.yml build backend
+            # Backend: rebuild Docker image (no cache) and restart
+            docker compose -f docker-compose.prod.yml build --no-cache backend
             docker compose -f docker-compose.prod.yml up -d backend
 
             echo "✅ Backend restarted"
@@ -69,10 +69,15 @@ jobs:
 
       - name: Health check
         run: |
-          sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.SERVER_HOST }}/api/health)
-          if [ "$STATUS" != "200" ]; then
-            echo "❌ Health check failed (HTTP $STATUS)"
-            exit 1
-          fi
-          echo "✅ App live at http://${{ secrets.SERVER_HOST }}"
+          echo "Waiting for backend to start..."
+          for i in {1..12}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://${{ secrets.SERVER_HOST }}/api/health || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ App live at http://${{ secrets.SERVER_HOST }}"
+              exit 0
+            fi
+            echo "  Attempt $i: HTTP $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Health check failed after 2 minutes"
+          exit 1
