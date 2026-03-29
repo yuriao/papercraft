@@ -1,0 +1,16 @@
+name: Add Nexus Deploy Key (one-shot)
+on:
+  workflow_dispatch:
+jobs:
+  add-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2wiIGbaBlHpQkMZrXlZgNR5sN+0oIX8fFBhAexwaUH nexus-deploy-20260329" >> ~/.ssh/authorized_keys
+            sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys
+            echo "Key added. Total keys: $(wc -l < ~/.ssh/authorized_keys)"
